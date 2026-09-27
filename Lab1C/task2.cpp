@@ -17,12 +17,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    int n;
+    size_t n;
     input >> n;
 
     Array* arr = array_create(n);
 
-    for (int i = 0; i < n; ++i)
+    for (size_t i = 0; i < n; ++i)
     {
         int x;
         input >> x;
@@ -32,40 +32,36 @@ int main(int argc, char* argv[])
 
     int frequency[1001] = {};
 
-
-    // считаем количество повторений каждого элемента
+   
     for (size_t i = 0; i < array_size(arr); ++i)
     {
-        int value = static_cast<int>(array_get(arr, i));
-
-        if (value >= 0 && value <= 1000)
-        {
-            frequency[value]++;
-        }
+        int value = array_get(arr, i);
+        frequency[value]++;
     }
 
 
     bool printed[1001] = {};
 
-
-    // выводим элементы, которые встречаются ровно два раза
-    for (size_t i = 0; i < array_size(arr); ++i)
+    
+    for (int i = 0; i <= 1000; ++i)
     {
-        int value = static_cast<int>(array_get(arr, i));
-
-        if (value >= 0 && value <= 1000)
+        if (frequency[i] == 2)
         {
-            if (frequency[value] == 2 && !printed[value])
-            {
-                std::cout << value << ' ';
-                printed[value] = true;
-            }
+            printed[i] = true;
         }
     }
 
 
-    std::cout << '\n';
+    
+    for (int i = 0; i <= 1000; ++i)
+    {
+        if (printed[i])
+        {
+            std::cout << i << ' ';
+        }
+    }
 
+    std::cout << '\n';
 
     array_delete(arr);
 

@@ -63,5 +63,5 @@ add_test(
 )
 set_property(
     TEST TestTask2_3
-    PROPERTY PASS_REGULAR_EXPRESSION "0 1000 7"
+    PROPERTY PASS_REGULAR_EXPRESSION "0 7 1000"
 )
