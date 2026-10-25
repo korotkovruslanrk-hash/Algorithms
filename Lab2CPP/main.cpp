@@ -8,63 +8,10 @@
 
 using namespace std;
 
-bool pop_value(Stack* stack, int& value)
-{
-    if (stack_empty(stack))
-    {
-        return false;
-    }
-
-    value = stack_get(stack);
-    stack_pop(stack);
-    return true;
-}
-
-bool read_number(const string& command, int& value)
-{
-    if (command.empty())
-    {
-        return false;
-    }
-
-    size_t start = command[0] == '-' ? 1 : 0;
-    if (start == command.size())
-    {
-        return false;
-    }
-
-    for (size_t i = start; i < command.size(); ++i)
-    {
-        if (command[i] < '0' || command[i] > '9')
-        {
-            return false;
-        }
-    }
-
-    try
-    {
-        value = stoi(command);
-    }
-    catch (const exception&)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-int fail(Stack* stack, const string& message)
-{
-    cerr << message << '\n';
-    stack_delete(stack);
-    return 1;
-}
-
 int main(int argc, char* argv[])
 {
-    if (argc != 3)
+    if (argc < 3)
     {
-        cerr << "Usage: Lab2CPP <script> <input>\n";
         return 1;
     }
 
@@ -73,182 +20,221 @@ int main(int argc, char* argv[])
 
     if (!script || !input)
     {
-        cerr << "Cannot open an input file\n";
         return 1;
     }
 
     vector<string> commands;
     string command;
+
     while (script >> command)
     {
         commands.push_back(command);
     }
 
     Stack* stack = stack_create();
+
     int repeatCount = 0;
     size_t repeatStart = 0;
-    bool repeatIsSet = false;
-    size_t conditionDepth = 0;
 
     size_t i = 0;
+
     while (i < commands.size())
     {
         command = commands[i];
 
-        int number = 0;
-        if (read_number(command, number))
+        bool isNumber = true;
+        size_t start = 0;
+
+        if (!command.empty() && command[0] == '-')
         {
-            stack_push(stack, number);
+            start = 1;
         }
-        else if (command == "get")
+
+        if (start == command.size())
         {
-            if (!(input >> number))
+            isNumber = false;
+        }
+
+        for (size_t j = start; j < command.size(); ++j)
+        {
+            if (command[j] < '0' || command[j] > '9')
             {
-                return fail(stack, "Invalid input");
+                isNumber = false;
+                break;
             }
-            stack_push(stack, number);
         }
+
+        if (isNumber)
+        {
+            int number = stoi(command);
+            stack_push(stack, number);
+
+            ++i;
+            continue;
+        }
+
+        if (command == "get")
+        {
+            int value;
+
+            if (!(input >> value))
+            {
+                stack_delete(stack);
+                return 1;
+            }
+
+            stack_push(stack, value);
+        }
+
         else if (command == "peek")
         {
             if (stack_empty(stack))
             {
-                return fail(stack, "peek requires one value");
+                stack_delete(stack);
+                return 1;
             }
+
             cout << stack_get(stack) << ' ';
         }
-        else if (command == "add" || command == "sub" ||
-                 command == "mul" || command == "div")
-        {
-            int top = 0;
-            int bottom = 0;
-            if (!pop_value(stack, top) || !pop_value(stack, bottom))
-            {
-                return fail(stack, command + " requires two values");
-            }
 
-            if (command == "add")
-            {
-                stack_push(stack, top + bottom);
-            }
-            else if (command == "sub")
-            {
-                stack_push(stack, top - bottom);
-            }
-            else if (command == "mul")
-            {
-                stack_push(stack, top * bottom);
-            }
-            else
-            {
-                if (bottom == 0)
-                {
-                    return fail(stack, "Division by zero");
-                }
-                stack_push(stack, top / bottom);
-            }
-        }
-        else if (command == "sqrt" || command == "sq")
+        else if (command == "add")
         {
-            int value = 0;
-            if (!pop_value(stack, value))
-            {
-                return fail(stack, command + " requires one value");
-            }
+            int first = stack_get(stack);
+            stack_pop(stack);
 
-            if (command == "sqrt")
-            {
-                if (value < 0)
-                {
-                    return fail(stack, "Square root of a negative value");
-                }
-                stack_push(stack, static_cast<int>(sqrt(value)));
-            }
-            else
-            {
-                stack_push(stack, value * value);
-            }
+            int second = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, first + second);
         }
+
+        else if (command == "sub")
+        {
+            int first = stack_get(stack);
+            stack_pop(stack);
+
+            int second = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, first - second);
+        }
+
+        else if (command == "mul")
+        {
+            int first = stack_get(stack);
+            stack_pop(stack);
+
+            int second = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, first * second);
+        }
+
+        else if (command == "div")
+        {
+            int first = stack_get(stack);
+            stack_pop(stack);
+
+            int second = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, first / second);
+        }
+
+        else if (command == "sqrt")
+        {
+            int value = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, (int)sqrt(value));
+        }
+
+        else if (command == "sq")
+        {
+            int value = stack_get(stack);
+            stack_pop(stack);
+
+            stack_push(stack, value * value);
+        }
+
         else if (command == "cond")
         {
-            int top = 0;
-            if (!pop_value(stack, top) || stack_empty(stack))
+            if (stack_empty(stack))
             {
-                return fail(stack, "cond requires two values");
+                stack_delete(stack);
+                return 1;
             }
 
-            int bottom = stack_get(stack);
-            if (top == bottom)
+            int first = stack_get(stack);
+            stack_pop(stack);
+
+            if (stack_empty(stack))
+            {
+                stack_delete(stack);
+                return 1;
+            }
+
+            int second = stack_get(stack);
+
+            if (first == second)
             {
                 stack_pop(stack);
-                ++conditionDepth;
             }
             else
             {
-                size_t nestedDepth = 1;
-                while (nestedDepth > 0)
+                int depth = 1;
+
+                while (depth > 0)
                 {
                     ++i;
+
                     if (i >= commands.size())
                     {
-                        return fail(stack, "cond has no matching end");
+                        stack_delete(stack);
+                        return 1;
                     }
+
                     if (commands[i] == "cond")
                     {
-                        ++nestedDepth;
+                        depth++;
                     }
                     else if (commands[i] == "end")
                     {
-                        --nestedDepth;
+                        depth--;
                     }
                 }
             }
         }
+
         else if (command == "end")
         {
-            if (conditionDepth == 0)
-            {
-                return fail(stack, "end has no matching cond");
-            }
-            --conditionDepth;
         }
+
         else if (command == "setr")
         {
-            if (!pop_value(stack, repeatCount))
-            {
-                return fail(stack, "setr requires one value");
-            }
+            repeatCount = stack_get(stack);
+            stack_pop(stack);
+
             repeatStart = i + 1;
-            repeatIsSet = true;
         }
+
         else if (command == "repeat")
         {
-            if (!repeatIsSet)
-            {
-                return fail(stack, "repeat has no matching setr");
-            }
+            repeatCount--;
 
-            if (repeatCount > 1)
+            if (repeatCount > 0)
             {
-                --repeatCount;
                 i = repeatStart;
                 continue;
             }
-            repeatCount = 0;
-        }
-        else
-        {
-            return fail(stack, "Unknown command: " + command);
         }
 
         ++i;
     }
 
-    if (conditionDepth != 0)
-    {
-        return fail(stack, "cond has no matching end");
-    }
-
     cout << '\n';
+
     stack_delete(stack);
+
     return 0;
 }

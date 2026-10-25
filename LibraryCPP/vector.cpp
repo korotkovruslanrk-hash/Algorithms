@@ -16,15 +16,11 @@ Vector *vector_create()
     vector->data = nullptr;
 
     return vector;
+
 }
 
 void vector_delete(Vector *vector)
 {
-    if (vector == nullptr)
-    {
-        return;
-    }
-
     delete[] vector->data;
     delete vector;
 }
@@ -46,26 +42,21 @@ size_t vector_size(const Vector *vector)
 
 void vector_resize(Vector *vector, size_t size)
 {
-    const size_t oldSize = vector->size;
-
-    if (size > vector->capacity)
-    {
+    if (size > vector->capacity) {
         size_t newCapacity = vector->capacity;
 
-        if (newCapacity == 0)
-        {
+
+        if (newCapacity == 0) {
             newCapacity = 1;
         }
 
-        while (newCapacity < size)
-        {
+        while (newCapacity < size) {
             newCapacity *= 2;
         }
 
         Data* newData = new Data[newCapacity]{};
 
-        for (size_t i = 0; i < oldSize; ++i)
-        {
+        for (size_t i = 0; i < vector->size; i++) {
             newData[i] = vector->data[i];
         }
 
@@ -73,13 +64,6 @@ void vector_resize(Vector *vector, size_t size)
 
         vector->data = newData;
         vector->capacity = newCapacity;
-    }
-    else
-    {
-        for (size_t i = oldSize; i < size; ++i)
-        {
-            vector->data[i] = Data{};
-        }
     }
 
     vector->size = size;
